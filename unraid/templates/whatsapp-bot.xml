@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Container>
+  <Name>WhatsApp Notification Bot</Name>
+  <Repository>allthethangz/whatsapp-api</Repository>
+  <Registry>https://github.com/AllTheThangz/unraid-whatsapp-bot</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/AllTheThangz/unraid-whatsapp-bot/issues</Support>
+  <Project>https://github.com/AllTheThangz/unraid-whatsapp-bot</Project>
+  <Overview>This container allows you to send and receive WhatsApp messages using a self-hosted API with a built-in admin UI for managing authorized numbers and API keys. Designed for Unraid integration.</Overview>
+  <Category>Network:Messaging</Category>
+  <WebUI>http://[IP]:[PORT:3000]/admin</WebUI>
+  <Icon>https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg</Icon>
+  <Config Name="Appdata Config Path" Target="/app" Default="/mnt/user/appdata/whatsapp-bot" Mode="rw" Description="Persistent data path for config, logs, session." Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Admin Token" Target="ADMIN_TOKEN" Default="changeme" Mode="rw" Description="Required token to access the /admin panel. Change this!" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Port>
+    <HostPort>3000</HostPort>
+    <ContainerPort>3000</ContainerPort>
+    <Protocol>tcp</Protocol>
+  </Port>
+</Container>
