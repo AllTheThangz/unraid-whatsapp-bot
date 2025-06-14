@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WhatsApp Bot Admin Panel</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px; background: #f4f4f4; }
+    input, button { margin: 5px 0; padding: 5px; font-size: 1em; }
+    .section { margin-bottom: 30px; }
+    .entry { margin-bottom: 5px; }
+    form { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>WhatsApp Bot Admin Panel</h1>
+
+  <form method="POST" action="/admin?token=<%= token %>">
+    <div class="section">
+      <h2>Authorized Numbers</h2>
+      <% numbers.forEach(function(num, idx) { %>
+        <div class="entry">
+          <input name="numbers" value="<%= num %>"/>
+          <button name="delete_number" value="<%= idx %>">❌</button>
+        </div>
+      <% }); %>
+      <input name="new_number" placeholder="+11234567890"/>
+    </div>
+
+    <div class="section">
+      <h2>API Keys</h2>
+      <% Object.entries(keys).forEach(([k, v], idx) => { %>
+        <div class="entry">
+          <input name="keys" value="<%= v %>"/>
+          <button name="delete_key" value="<%= idx %>">❌</button>
+        </div>
+      <% }); %>
+      <input name="new_key" placeholder="NEWKEY123"/>
+    </div>
+
+    <button type="submit">Save Changes</button>
+  </form>
+</body>
+</html>
