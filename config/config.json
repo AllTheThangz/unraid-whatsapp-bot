@@ -1,0 +1,6 @@
+{
+  "authorizedNumbers": ["+11234567890"],
+  "apiKeys": {
+    "default": "REPLACE_WITH_YOUR_API_KEY"
+  }
+}
