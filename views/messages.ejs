@@ -1,0 +1,9 @@
+<h2>📜 Message Log</h2>
+<ul id="logList"></ul>
+<script>
+  fetch('/api/logs', { headers: { 'x-api-key': localStorage.getItem('apikey') } })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('logList').innerHTML = data.map(x => `<li>${x.number}: ${x.message}</li>`).join('');
+    });
+</script>

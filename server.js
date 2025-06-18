@@ -38,6 +38,9 @@ app.get("/dashboard", requireLogin, (req, res) => {
 
 app.get("/", (req, res) => res.redirect("/dashboard"));
 
+const apiRoutes = require('./routes/api');
+app.use('/api', apiRoutes);
+
 app.listen(PORT, () => {
     console.log(`Web admin running on port ${PORT}`);
 });
