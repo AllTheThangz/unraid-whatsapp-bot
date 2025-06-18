@@ -1,1 +1,0 @@
-exports.run = async (sock, msg) => { console.log('📡 Running !ping command'); await sock.sendMessage(msg.key.remoteJid, { text: '🏓 Pong!' }); };

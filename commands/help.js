@@ -1,1 +1,0 @@
-exports.run = async (sock, msg) => { console.log('📘 Running !help command'); await sock.sendMessage(msg.key.remoteJid, { text: 'Available commands: !ping, !help, !reload' }); };
