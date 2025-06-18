@@ -1,78 +1,56 @@
-require("dotenv").config();
-const makeWASocket = require("@whiskeysockets/baileys").default;
-const { useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const { default: makeWASocket, useSingleFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const { Boom } = require("@hapi/boom");
 const fs = require("fs");
 const path = require("path");
 const config = require("./config");
 
-let commands = {};
+const { state, saveCreds } = useSingleFileAuthState("./data/auth_info.json");
+
+let sock;
+let reconnecting = false;
+let commands = new Map();
 
 function loadCommands() {
-    commands = {};
-    const commandsDir = path.join(__dirname, "commands");
-    fs.readdirSync(commandsDir).forEach(file => {
-        if (file.endsWith(".js")) {
-            const name = file.replace(".js", "");
-            delete require.cache[require.resolve(`./commands/${file}`)];
-            commands[name] = require(`./commands/${file}`);
-        }
-    });
-    console.log("✅ Commands reloaded.");
+  commands.clear();
+  const commandFiles = fs.readdirSync(path.join(__dirname, "commands")).filter(file => file.endsWith(".js"));
+  for (const file of commandFiles) {
+    const command = require(`./commands/${file}`);
+    const name = file.split(".")[0];
+    commands.set(name, command);
+  }
+  console.log(`✅ Loaded ${commands.size} command(s)`);
 }
 
-async function startBot() {
-    const { state, saveCreds } = await useMultiFileAuthState("auth_info");
-
-    const sock = makeWASocket({
-        auth: state,
-        printQRInTerminal: true
-    });
-
-    sock.ev.on("creds.update", saveCreds);
-
-    sock.ev.on("connection.update", (update) => {
-        const { connection, lastDisconnect } = update;
-        if (connection === "close") {
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log("Connection closed. Reconnecting...", shouldReconnect);
-            if (shouldReconnect) {
-                startBot();
-            }
-        }
-    });
-
-    sock.ev.on("messages.upsert", async ({ messages, type }) => {
-        if (type !== "notify") return;
-        const msg = messages[0];
-        if (!msg.message || msg.key.fromMe) return;
-
-        try {
-            const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
-            if (!text || !text.startsWith("!")) return;
-
-            const commandName = text.trim().split(" ")[0].substring(1).toLowerCase();
-
-            if (commandName === "reload") {
-                const sender = msg.key.participant || msg.key.remoteJid;
-                if (sender === config.OWNER_NUMBER) {
-                    loadCommands();
-                    return sock.sendMessage(msg.key.remoteJid, { text: "🔁 Commands reloaded." });
-                } else {
-                    return sock.sendMessage(msg.key.remoteJid, { text: "🚫 Unauthorized." });
-                }
-            }
-
-            const command = commands[commandName];
-            if (command) {
-                await command.run(sock, msg, text);
-            }
-        } catch (err) {
-            console.error("Error handling message:", err);
-            await sock.sendMessage(msg.key.remoteJid, { text: "⚠️ Error handling your message." });
-        }
-    });
-
-    loadCommands();
+function startBot() {
+  sock = makeWASocket({ auth: state, printQRInTerminal: true, logger: { level: "silent" } });
+  sock.ev.on("creds.update", saveCreds);
+  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
+    if (connection === "close") {
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log("📴 Disconnected.", shouldReconnect ? "Reconnecting…" : "Logged out.");
+      if (shouldReconnect && !reconnecting) {
+        reconnecting = true;
+        setTimeout(() => { reconnecting = false; startBot(); }, 5000);
+      }
+    } else if (connection === "open") {
+      console.log("✅ WhatsApp bot is connected.");
+    }
+  });
+  sock.ev.on("messages.upsert", async ({ messages }) => {
+    const msg = messages[0];
+    if (!msg.message || msg.key.fromMe) return;
+    const body = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+    const commandName = body.trim().split(" ")[0].substring(1);
+    if (body.startsWith("!") && commands.has(commandName)) {
+      try {
+        await commands.get(commandName).run(sock, msg);
+      } catch (err) {
+        console.error(`❌ Error executing !${commandName}:`, err);
+      }
+    }
+  });
 }
 
+loadCommands();
 startBot();
+module.exports = { sock };
