@@ -1,0 +1,13 @@
+<h1>Admin Panel</h1>
+<form method="POST" action="/send">
+  <input name="to" placeholder="To (JID)" />
+  <input name="message" placeholder="Message" />
+  <button type="submit">Send</button>
+</form>
+<form method="POST" action="/run">
+  <select name="command">
+    <% commands.forEach(cmd => { %><option value="<%= cmd %>"><%= cmd %></option><% }); %>
+  </select>
+  <button type="submit">Run</button>
+</form>
+<a href="/logs">View Logs</a>
