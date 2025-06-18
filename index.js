@@ -5,14 +5,20 @@ const fs = require("fs");
 const path = require("path");
 const config = require("./config");
 
-const commands = {};
-const commandsDir = path.join(__dirname, "commands");
-fs.readdirSync(commandsDir).forEach(file => {
-    if (file.endsWith(".js")) {
-        const name = file.replace(".js", "");
-        commands[name] = require(path.join(commandsDir, file));
-    }
-});
+let commands = {};
+
+function loadCommands() {
+    commands = {};
+    const commandsDir = path.join(__dirname, "commands");
+    fs.readdirSync(commandsDir).forEach(file => {
+        if (file.endsWith(".js")) {
+            const name = file.replace(".js", "");
+            delete require.cache[require.resolve(`./commands/${file}`)];
+            commands[name] = require(`./commands/${file}`);
+        }
+    });
+    console.log("✅ Commands reloaded.");
+}
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState("auth_info");
@@ -45,6 +51,17 @@ async function startBot() {
             if (!text || !text.startsWith("!")) return;
 
             const commandName = text.trim().split(" ")[0].substring(1).toLowerCase();
+
+            if (commandName === "reload") {
+                const sender = msg.key.participant || msg.key.remoteJid;
+                if (sender === config.OWNER_NUMBER) {
+                    loadCommands();
+                    return sock.sendMessage(msg.key.remoteJid, { text: "🔁 Commands reloaded." });
+                } else {
+                    return sock.sendMessage(msg.key.remoteJid, { text: "🚫 Unauthorized." });
+                }
+            }
+
             const command = commands[commandName];
             if (command) {
                 await command.run(sock, msg, text);
@@ -54,6 +71,8 @@ async function startBot() {
             await sock.sendMessage(msg.key.remoteJid, { text: "⚠️ Error handling your message." });
         }
     });
+
+    loadCommands();
 }
 
 startBot();
